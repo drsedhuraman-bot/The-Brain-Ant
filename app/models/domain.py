@@ -17,6 +17,9 @@ class AntType(str, Enum):
     CODER = "coder"
     WRITER = "writer"
     ANALYST = "analyst"
+    RUFLO = "ruflo"
+    ECC = "ecc"
+    MY_OWN_AI = "my_own_ai"
 
 
 class Session(BaseModel):

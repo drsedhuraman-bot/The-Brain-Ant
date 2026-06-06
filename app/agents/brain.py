@@ -23,6 +23,9 @@ Available Ants:
 - coder: code generation, debugging, technical implementation
 - writer: prose writing, editing, formatting documents
 - analyst: data analysis, logical reasoning, structured thinking
+- ruflo: multi-agent swarm orchestration, agent topology configuration, and AgentDB vector searches
+- ecc: prompt/token optimization, static security audits, and harness performance checks
+- my_own_ai: personalized context adaptation and custom style formatting
 
 Guidelines:
 - Delegate when a subtask benefits from specialization.
@@ -57,7 +60,7 @@ Guidelines:
                     "properties": {
                         "ant_type": {
                             "type": "string",
-                            "enum": ["research", "coder", "writer", "analyst"],
+                            "enum": ["research", "coder", "writer", "analyst", "ruflo", "ecc", "my_own_ai"],
                             "description": "The type of Ant to delegate to",
                         },
                         "subtask": {
@@ -217,7 +220,13 @@ Guidelines:
         desc_lower = task_description.lower()
         delegations = []
 
-        if any(w in desc_lower for w in ["code", "program", "script", "develop", "function", "bug", "write some code"]):
+        if any(w in desc_lower for w in ["swarm", "ruflo", "topology", "mesh", "ring", "star", "hierarchical"]):
+            delegations.append(("ruflo", f"Spawn and initialize a swarm setup for: {task_description}"))
+        elif any(w in desc_lower for w in ["optimize", "ecc", "performance", "security", "audit", "vulnerability", "tokens"]):
+            delegations.append(("ecc", f"Audit security and optimize prompt tokens for: {task_description}"))
+        elif any(w in desc_lower for w in ["personal", "my own", "custom", "preferences", "cognitive"]):
+            delegations.append(("my_own_ai", f"Personalize response style for: {task_description}"))
+        elif any(w in desc_lower for w in ["code", "program", "script", "develop", "function", "bug", "write some code"]):
             delegations.append(("coder", f"Write Python code to solve: {task_description}"))
         elif any(w in desc_lower for w in ["search", "find", "weather", "who", "what", "news", "current"]):
             delegations.append(("research", f"Research the web for details about: {task_description}"))

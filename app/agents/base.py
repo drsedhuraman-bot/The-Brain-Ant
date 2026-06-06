@@ -281,6 +281,50 @@ class BaseAnt(ABC):
                 
             return intro + prose, 250
 
+        elif self.ant_type == AntType.RUFLO:
+            intro = f"Analyzing swarm configuration for: '{last_user_msg}'...\n\n"
+            for char in intro:
+                await self._emit(WSMessageType.ANT_STREAMING, content=char)
+                await asyncio.sleep(0.01)
+            
+            swarm_res = await self._dispatch_tool("initialize_swarm", {"topology": "hierarchical", "agents": ["coder", "researcher"]})
+            db_res = await self._dispatch_tool("query_agentdb", {"query": last_user_msg, "namespace": "development"})
+            
+            out_str = f"Swarm Setup:\n{swarm_res}\n\nAgentDB Context Retrieval:\n{db_res}\n\nSwarm coordination initialized successfully!"
+            for char in out_str:
+                await self._emit(WSMessageType.ANT_STREAMING, content=char)
+                await asyncio.sleep(0.005)
+            return intro + out_str, 400
+
+        elif self.ant_type == AntType.ECC:
+            intro = f"Running performance harness and security scanning on: '{last_user_msg}'...\n\n"
+            for char in intro:
+                await self._emit(WSMessageType.ANT_STREAMING, content=char)
+                await asyncio.sleep(0.01)
+            
+            opt_res = await self._dispatch_tool("optimize_prompts", {"prompt": last_user_msg})
+            scan_res = await self._dispatch_tool("security_scan", {"code": "def run():\n    exec('import os')\n    eval('2+2')"})
+            
+            out_str = f"{opt_res}\n\n{scan_res}\n\nHarness validation check: COMPLETED SUCCESSFULLY"
+            for char in out_str:
+                await self._emit(WSMessageType.ANT_STREAMING, content=char)
+                await asyncio.sleep(0.005)
+            return intro + out_str, 350
+
+        elif self.ant_type == AntType.MY_OWN_AI:
+            intro = f"Adapting response to user's personalized cognitive style for: '{last_user_msg}'...\n\n"
+            for char in intro:
+                await self._emit(WSMessageType.ANT_STREAMING, content=char)
+                await asyncio.sleep(0.01)
+            
+            pers_res = await self._dispatch_tool("personalize_response", {"text": f"Analyzing and answering query: {last_user_msg}", "style": "creative"})
+            
+            out_str = f"{pers_res}\n\nResponse personalized to user cognitive profile."
+            for char in out_str:
+                await self._emit(WSMessageType.ANT_STREAMING, content=char)
+                await asyncio.sleep(0.005)
+            return intro + out_str, 300
+
         else:
             fallback = f"Mock response from {self.ant_type} for task: '{last_user_msg}'"
             for char in fallback:

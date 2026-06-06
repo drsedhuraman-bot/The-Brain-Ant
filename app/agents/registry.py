@@ -6,6 +6,9 @@ from .research_ant import ResearchAnt
 from .coder_ant import CoderAnt
 from .writer_ant import WriterAnt
 from .analyst_ant import AnalystAnt
+from .ruflo_ant import RufloAnt
+from .ecc_ant import EccAnt
+from .my_own_ai_ant import MyOwnAiAnt
 from ..models.domain import AntType
 from ..models.api import WSMessage
 
@@ -18,6 +21,9 @@ class AntRegistry:
         AntType.CODER: CoderAnt,
         AntType.WRITER: WriterAnt,
         AntType.ANALYST: AnalystAnt,
+        AntType.RUFLO: RufloAnt,
+        AntType.ECC: EccAnt,
+        AntType.MY_OWN_AI: MyOwnAiAnt,
     }
 
     def __init__(self, client: AsyncAnthropic):
