@@ -13,13 +13,13 @@ def _get_db(request: Request):
     return request.app.state.db
 
 
-@router.post("/", response_model=Session)
+@router.post("", response_model=Session)
 async def create_session(body: CreateSessionRequest, request: Request) -> Session:
     mgr = _get_session_mgr(request)
     return await mgr.create_session(title=body.title)
 
 
-@router.get("/", response_model=list[dict])
+@router.get("", response_model=list[dict])
 async def list_sessions(request: Request):
     db = _get_db(request)
     return db.list_sessions()

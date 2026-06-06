@@ -47,6 +47,10 @@ class BaseAnt(ABC):
         Handles tool_use blocks by calling _dispatch_tool and looping.
         Returns (accumulated_text, total_input_tokens + output_tokens).
         """
+        from ..config import settings
+        if settings.anthropic_api_key == "mock-key":
+            return await self._mock_stream_completion(messages, tools, max_tokens)
+
         full_text = ""
         total_tokens = 0
         current_messages = list(messages)
@@ -160,3 +164,126 @@ class BaseAnt(ABC):
     def _model(self) -> str:
         from ..config import settings
         return settings.model
+
+    async def _mock_stream_completion(
+        self,
+        messages: list[dict],
+        tools: list[dict] | None = None,
+        max_tokens: int = 4096,
+    ) -> tuple[str, int]:
+        import asyncio
+        from ..models.domain import AntType
+
+        # Determine last user message
+        last_user_msg = ""
+        for m in reversed(messages):
+            if m["role"] == "user":
+                content = m["content"]
+                if isinstance(content, list):
+                    for block in content:
+                        if isinstance(block, dict) and block.get("type") == "text":
+                            last_user_msg += block.get("text", "")
+                else:
+                    last_user_msg = content
+                break
+
+        if self.ant_type == AntType.RESEARCH:
+            intro = f"Searching the web for: '{last_user_msg}'...\n\n"
+            for char in intro:
+                await self._emit(WSMessageType.ANT_STREAMING, content=char)
+                await asyncio.sleep(0.01)
+            
+            search_result = await self._dispatch_tool("web_search", {"query": last_user_msg})
+            
+            synthesis_intro = "Found search results. Here is the synthesized summary:\n\n"
+            for char in synthesis_intro:
+                await self._emit(WSMessageType.ANT_STREAMING, content=char)
+                await asyncio.sleep(0.01)
+            
+            lines = search_result.split("\n")
+            summary_lines = []
+            for line in lines:
+                if line.startswith("Summary: ") or line.startswith("- "):
+                    summary_lines.append(line)
+            
+            summary_text = "\n".join(summary_lines) if summary_lines else search_result
+            if len(summary_text) > 800:
+                summary_text = summary_text[:800] + "...\n(truncated)"
+                
+            for char in summary_text:
+                await self._emit(WSMessageType.ANT_STREAMING, content=char)
+                await asyncio.sleep(0.005)
+                
+            return intro + synthesis_intro + summary_text, 450
+
+        elif self.ant_type == AntType.CODER:
+            intro = f"Analyzing task to write Python code for: '{last_user_msg}'...\n\n"
+            for char in intro:
+                await self._emit(WSMessageType.ANT_STREAMING, content=char)
+                await asyncio.sleep(0.01)
+            
+            code_to_run = "print('Hello from CoderAnt sandboxed environment!')\nimport sys\nprint('Python version:', sys.version.split()[0])"
+            if "prime" in last_user_msg.lower():
+                code_to_run = "def is_prime(n):\n    return n > 1 and all(n % i != 0 for i in range(2, int(n**0.5) + 1))\nprint('Primes up to 20:', [x for x in range(20) if is_prime(x)])"
+            elif "fib" in last_user_msg.lower():
+                code_to_run = "def fib(n):\n    return n if n <= 1 else fib(n-1) + fib(n-2)\nprint('Fibonacci(8):', fib(8))"
+            
+            run_intro = f"Running verification code:\n```python\n{code_to_run}\n```\n"
+            for char in run_intro:
+                await self._emit(WSMessageType.ANT_STREAMING, content=char)
+                await asyncio.sleep(0.01)
+                
+            execution_output = await self._dispatch_tool("execute_code", {"code": code_to_run})
+            
+            out_str = f"\nExecution Output:\n```\n{execution_output}\n```\n\nThe code executes successfully and works as intended!"
+            for char in out_str:
+                await self._emit(WSMessageType.ANT_STREAMING, content=char)
+                await asyncio.sleep(0.005)
+                
+            return intro + run_intro + out_str, 500
+
+        elif self.ant_type == AntType.ANALYST:
+            intro = f"Performing logical step-by-step reasoning on: '{last_user_msg}'\n\n"
+            for char in intro:
+                await self._emit(WSMessageType.ANT_STREAMING, content=char)
+                await asyncio.sleep(0.01)
+                
+            await self._dispatch_tool("reason_step_by_step", {"problem": last_user_msg})
+            steps = (
+                "1. **Identify parameters**: We parse the initial constraints of the problem.\n"
+                "2. **Evaluate constraints**: We verify the system boundaries and inputs.\n"
+                "3. **Synthesize solution**: We formulate an evidence-based conclusion based on logical consistency.\n\n"
+                "**Conclusion**: The system status is functional, verified by SQLite backend tests."
+            )
+            for char in steps:
+                await self._emit(WSMessageType.ANT_STREAMING, content=char)
+                await asyncio.sleep(0.005)
+                
+            return intro + steps, 300
+
+        elif self.ant_type == AntType.WRITER:
+            intro = f"Generating clear and compelling prose response for: '{last_user_msg}'\n\n"
+            for char in intro:
+                await self._emit(WSMessageType.ANT_STREAMING, content=char)
+                await asyncio.sleep(0.01)
+                
+            prose = (
+                f"### Prose Synthesis\n\n"
+                f"Regarding the query '{last_user_msg}', this is a beautifully drafted response to provide clarity. "
+                f"All components are working harmoniously. The system displays active communication streams, "
+                f"live WebSocket notifications, and traces tasks step by step. We have successfully verified "
+                f"the layout and functionalities of the Ant colony.\n\n"
+                f"Please let me know if you would like me to rewrite or format this in another specific style!"
+            )
+            for char in prose:
+                await self._emit(WSMessageType.ANT_STREAMING, content=char)
+                await asyncio.sleep(0.005)
+                
+            return intro + prose, 250
+
+        else:
+            fallback = f"Mock response from {self.ant_type} for task: '{last_user_msg}'"
+            for char in fallback:
+                await self._emit(WSMessageType.ANT_STREAMING, content=char)
+                await asyncio.sleep(0.01)
+            return fallback, 100

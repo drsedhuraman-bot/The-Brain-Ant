@@ -17,7 +17,7 @@ def _get_db(request: Request):
     return request.app.state.db
 
 
-@router.post("/", response_model=TaskResponse)
+@router.post("", response_model=TaskResponse)
 async def submit_task(body: SubmitTaskRequest, request: Request):
     mgr = _get_session_mgr(request)
     engine = _get_engine(request)

@@ -82,6 +82,10 @@ Guidelines:
         2. For each delegate_to_ant call, run the target Ant.
         3. Stream Brain's synthesis of all Ant results.
         """
+        from ..config import settings
+        if settings.anthropic_api_key == "mock-key":
+            return await self._mock_run(task_description, context, session_messages)
+
         # Emit brain thinking start
         await self._emit_with_task(WSMessageType.BRAIN_THINKING, content="Analyzing your request…")
 
@@ -196,3 +200,67 @@ Guidelines:
         self, msg_type: WSMessageType, content: str | None = None, metadata: dict | None = None
     ) -> None:
         await self._emit(msg_type, content=content, metadata=metadata, task_id=self.task_id)
+
+    async def _mock_run(
+        self,
+        task_description: str,
+        context: dict,
+        session_messages: list[dict] | None = None,
+    ) -> tuple[str, int]:
+        import asyncio
+        from ..models.domain import AntType
+
+        await self._emit_with_task(WSMessageType.BRAIN_THINKING, content="Analyzing your request…\n")
+        await asyncio.sleep(0.5)
+
+        # Decide which ants to delegate to
+        desc_lower = task_description.lower()
+        delegations = []
+
+        if any(w in desc_lower for w in ["code", "program", "script", "develop", "function", "bug", "write some code"]):
+            delegations.append(("coder", f"Write Python code to solve: {task_description}"))
+        elif any(w in desc_lower for w in ["search", "find", "weather", "who", "what", "news", "current"]):
+            delegations.append(("research", f"Research the web for details about: {task_description}"))
+        elif any(w in desc_lower for w in ["analyze", "reason", "think", "logic", "compare", "why"]):
+            delegations.append(("analyst", f"Analyze and reason step-by-step: {task_description}"))
+        elif any(w in desc_lower for w in ["write", "draft", "prose", "text", "essay", "article"]):
+            delegations.append(("writer", f"Write a beautifully styled prose about: {task_description}"))
+        else:
+            delegations.append(("research", f"Search information related to: {task_description}"))
+            delegations.append(("writer", f"Draft a final report based on search results for: {task_description}"))
+
+        # Tell the user what the plan is
+        plan_str = f"Plan:\n"
+        for ant_type, subtask in delegations:
+            plan_str += f"- Delegate to **{ant_type}**: '{subtask}'\n"
+        plan_str += "\nStarting delegation...\n\n"
+        
+        for char in plan_str:
+            await self._emit_with_task(WSMessageType.BRAIN_THINKING, content=char)
+            await asyncio.sleep(0.005)
+
+        await asyncio.sleep(0.5)
+
+        results = []
+        total_tokens = 200
+
+        for ant_type, subtask in delegations:
+            res_text, tokens = await self._execute_delegation("mock_tool_id", {"ant_type": ant_type, "subtask": subtask})
+            results.append((ant_type, res_text))
+            total_tokens += tokens
+
+        synthesis_intro = "\n\nSynthesizing findings and drafting the final response:\n\n"
+        for char in synthesis_intro:
+            await self._emit_with_task(WSMessageType.BRAIN_THINKING, content=char)
+            await asyncio.sleep(0.005)
+
+        final_response = "### Final Synthesized Answer\n\n"
+        for ant_type, res_text in results:
+            final_response += f"**From {ant_type.upper()} Ant**:\n{res_text}\n\n"
+        final_response += "The task is now fully completed. Let me know if you need anything else!"
+
+        for char in final_response:
+            await self._emit_with_task(WSMessageType.BRAIN_THINKING, content=char)
+            await asyncio.sleep(0.002)
+
+        return plan_str + synthesis_intro + final_response, total_tokens
