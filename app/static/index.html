@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>The Brain Ant</title>
+  <link rel="stylesheet" href="/static/css/style.css" />
+</head>
+<body>
+  <div id="app">
+
+    <!-- ── Left sidebar: sessions ── -->
+    <aside id="sidebar">
+      <div id="sidebar-header">
+        <h2>🐜 Brain Ant</h2>
+        <button id="new-session-btn">+ New</button>
+      </div>
+      <div id="session-list"></div>
+    </aside>
+
+    <!-- ── Center: chat ── -->
+    <main id="main">
+      <div id="chat-header">Select a session</div>
+
+      <div id="messages">
+        <div id="empty-state">
+          <div class="logo">🧠🐜</div>
+          <h3>The Brain Ant</h3>
+          <p>An AI agent colony ready to tackle complex tasks. Ask anything — the Brain will dispatch specialized Ants to help.</p>
+        </div>
+      </div>
+
+      <div id="input-area">
+        <textarea
+          id="user-input"
+          placeholder="Ask the Brain Ant anything… (Enter to send, Shift+Enter for newline)"
+          rows="1"
+        ></textarea>
+        <button id="send-btn">Send</button>
+      </div>
+    </main>
+
+    <!-- ── Right panel: agent trace ── -->
+    <aside id="trace-panel">
+      <div id="trace-header">
+        <span>🐜 Agent Trace</span>
+      </div>
+      <div id="trace-body">
+        <div class="trace-empty">Agent trace will appear here…</div>
+      </div>
+    </aside>
+
+  </div>
+
+  <script src="/static/js/api.js"></script>
+  <script src="/static/js/chat.js"></script>
+  <script src="/static/js/trace.js"></script>
+  <script src="/static/js/app.js"></script>
+</body>
+</html>
